@@ -118,7 +118,7 @@ async def async_setup_entry(
 class Sensor(ZhaEntity, SensorEntity):
     """Base ZHA sensor."""
 
-    SENSOR_ATTR: int | str | None = None
+    _attribute_name: int | str | None = None
     _decimals: int = 1
     _divisor: int = 1
     _multiplier: int | float = 1
@@ -148,8 +148,8 @@ class Sensor(ZhaEntity, SensorEntity):
         """
         cluster_handler = cluster_handlers[0]
         if (
-            cls.SENSOR_ATTR in cluster_handler.cluster.unsupported_attributes
-            or cls.SENSOR_ATTR not in cluster_handler.cluster.attributes_by_name
+            cls._attribute_name in cluster_handler.cluster.unsupported_attributes
+            or cls._attribute_name not in cluster_handler.cluster.attributes_by_name
         ):
             return None
 
@@ -165,8 +165,8 @@ class Sensor(ZhaEntity, SensorEntity):
     @property
     def native_value(self) -> StateType:
         """Return the state of the entity."""
-        assert self.SENSOR_ATTR is not None
-        raw_state = self._cluster_handler.cluster.get(self.SENSOR_ATTR)
+        assert self._attribute_name is not None
+        raw_state = self._cluster_handler.cluster.get(self._attribute_name)
         if raw_state is None:
             return None
         return self.formatter(raw_state)
@@ -194,8 +194,8 @@ class Sensor(ZhaEntity, SensorEntity):
 class AnalogInput(Sensor):
     """Sensor that displays analog input values."""
 
-    SENSOR_ATTR = "present_value"
-    _attr_name: str = "Analog input"
+    _attribute_name = "present_value"
+    _attr_translation_key: str = "analog_input"
 
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_POWER_CONFIGURATION)
@@ -203,11 +203,10 @@ class AnalogInput(Sensor):
 class Battery(Sensor):
     """Battery sensor of power configuration cluster."""
 
-    SENSOR_ATTR = "battery_percentage_remaining"
+    _attribute_name = "battery_percentage_remaining"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.BATTERY
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_name: str = "Battery"
     _attr_native_unit_of_measurement = PERCENTAGE
 
     @classmethod
@@ -262,10 +261,9 @@ class Battery(Sensor):
 class ElectricalMeasurement(Sensor):
     """Active power measurement."""
 
-    SENSOR_ATTR = "active_power"
+    _attribute_name = "active_power"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.POWER
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Active power"
     _attr_native_unit_of_measurement: str = UnitOfPower.WATT
     _div_mul_prefix = "ac_power"
 
@@ -276,7 +274,7 @@ class ElectricalMeasurement(Sensor):
         if self._cluster_handler.measurement_type is not None:
             attrs["measurement_type"] = self._cluster_handler.measurement_type
 
-        max_attr_name = f"{self.SENSOR_ATTR}_max"
+        max_attr_name = f"{self._attribute_name}_max"
 
         try:
             max_v = self._cluster_handler.cluster.get(max_attr_name)
@@ -341,14 +339,12 @@ class PolledElectricalMeasurement(ElectricalMeasurement):
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class ElectricalMeasurementApparentPower(
-    ElectricalMeasurement, id_suffix="apparent_power"
-):
+class ElectricalMeasurementApparentPower(ElectricalMeasurement):
     """Apparent power measurement."""
 
-    SENSOR_ATTR = "apparent_power"
+    _attribute_name = "apparent_power"
+    _unique_id_suffix = "apparent_power"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.APPARENT_POWER
-    _attr_name: str = "Apparent power"
     _attr_native_unit_of_measurement = UnitOfApparentPower.VOLT_AMPERE
     _div_mul_prefix = "ac_power"
 
@@ -377,12 +373,12 @@ class ElectricalMeasurementApparentPowerPhC(
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class ElectricalMeasurementRMSCurrent(ElectricalMeasurement, id_suffix="rms_current"):
+class ElectricalMeasurementRMSCurrent(ElectricalMeasurement):
     """RMS current measurement."""
 
-    SENSOR_ATTR = "rms_current"
+    _attribute_name = "rms_current"
+    _unique_id_suffix = "rms_current"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.CURRENT
-    _attr_name: str = "RMS current"
     _attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
     _div_mul_prefix = "ac_current"
     _decimals = 2
@@ -408,12 +404,12 @@ class ElectricalMeasurementRMSCurrentPhC(ElectricalMeasurementRMSCurrent, id_suf
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class ElectricalMeasurementRMSVoltage(ElectricalMeasurement, id_suffix="rms_voltage"):
+class ElectricalMeasurementRMSVoltage(ElectricalMeasurement):
     """RMS Voltage measurement."""
 
-    SENSOR_ATTR = "rms_voltage"
+    _attribute_name = "rms_voltage"
+    _unique_id_suffix = "rms_voltage"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.VOLTAGE
-    _attr_name: str = "RMS voltage"
     _attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
     _div_mul_prefix = "ac_voltage"
 
@@ -438,24 +434,25 @@ class ElectricalMeasurementRMSVoltagePhC(ElectricalMeasurementRMSVoltage, id_suf
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class ElectricalMeasurementFrequency(ElectricalMeasurement, id_suffix="ac_frequency"):
+class ElectricalMeasurementFrequency(ElectricalMeasurement):
     """Frequency measurement."""
 
-    SENSOR_ATTR = "ac_frequency"
+    _attribute_name = "ac_frequency"
+    _unique_id_suffix = "ac_frequency"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.FREQUENCY
-    _attr_name: str = "AC frequency"
+    _attr_translation_key: str = "ac_frequency"
     _attr_native_unit_of_measurement = UnitOfFrequency.HERTZ
     _div_mul_prefix = "ac_frequency"
 
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class ElectricalMeasurementPowerFactor(ElectricalMeasurement, id_suffix="power_factor"):
+class ElectricalMeasurementPowerFactor(ElectricalMeasurement):
     """Frequency measurement."""
 
-    SENSOR_ATTR = "power_factor"
+    _attribute_name = "power_factor"
+    _unique_id_suffix = "power_factor"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.POWER_FACTOR
-    _attr_name: str = "Power factor"
     _attr_native_unit_of_measurement = PERCENTAGE
 
 
@@ -489,10 +486,9 @@ class ElectricalMeasurementPowerFactorPhC(ElectricalMeasurementPowerFactor, id_s
 class Humidity(Sensor):
     """Humidity sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.HUMIDITY
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Humidity"
     _divisor = 100
     _attr_native_unit_of_measurement = PERCENTAGE
 
@@ -502,10 +498,10 @@ class Humidity(Sensor):
 class SoilMoisture(Sensor):
     """Soil Moisture sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.HUMIDITY
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Soil moisture"
+    _attr_translation_key: str = "soil_moisture"
     _divisor = 100
     _attr_native_unit_of_measurement = PERCENTAGE
 
@@ -515,10 +511,10 @@ class SoilMoisture(Sensor):
 class LeafWetness(Sensor):
     """Leaf Wetness sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.HUMIDITY
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Leaf wetness"
+    _attr_translation_key: str = "leaf_wetness"
     _divisor = 100
     _attr_native_unit_of_measurement = PERCENTAGE
 
@@ -528,10 +524,9 @@ class LeafWetness(Sensor):
 class Illuminance(Sensor):
     """Illuminance Sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.ILLUMINANCE
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Illuminance"
     _attr_native_unit_of_measurement = LIGHT_LUX
 
     def formatter(self, value: int) -> int:
@@ -547,10 +542,10 @@ class Illuminance(Sensor):
 class SmartEnergyMetering(Sensor):
     """Metering sensor."""
 
-    SENSOR_ATTR: int | str = "instantaneous_demand"
+    _attribute_name = "instantaneous_demand"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.POWER
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Instantaneous demand"
+    _attr_translation_key: str = "instantaneous_demand"
 
     unit_of_measure_map = {
         0x00: UnitOfPower.WATT,
@@ -598,13 +593,14 @@ class SmartEnergyMetering(Sensor):
     stop_on_match_group=CLUSTER_HANDLER_SMARTENERGY_METERING,
 )
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class SmartEnergySummation(SmartEnergyMetering, id_suffix="summation_delivered"):
+class SmartEnergySummation(SmartEnergyMetering):
     """Smart Energy Metering summation sensor."""
 
-    SENSOR_ATTR: int | str = "current_summ_delivered"
+    _attribute_name = "current_summ_delivered"
+    _unique_id_suffix = "summation_delivered"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.ENERGY
     _attr_state_class: SensorStateClass = SensorStateClass.TOTAL_INCREASING
-    _attr_name: str = "Summation consumed"
+    _attr_translation_key: str = "summation_delivered"
 
     unit_of_measure_map = {
         0x00: UnitOfEnergy.KILO_WATT_HOUR,
@@ -667,13 +663,12 @@ class PolledSmartEnergySummation(SmartEnergySummation):
     models={"ZLinky_TIC"},
 )
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class Tier1SmartEnergySummation(
-    PolledSmartEnergySummation, id_suffix="tier1_summation_delivered"
-):
+class Tier1SmartEnergySummation(PolledSmartEnergySummation):
     """Tier 1 Smart Energy Metering summation sensor."""
 
-    SENSOR_ATTR: int | str = "current_tier1_summ_delivered"
-    _attr_name: str = "Tier 1 summation delivered"
+    _attribute_name = "current_tier1_summ_delivered"
+    _unique_id_suffix = "tier1_summation_delivered"
+    _attr_translation_key: str = "tier1_summation_delivered"
 
 
 @MULTI_MATCH(
@@ -681,13 +676,12 @@ class Tier1SmartEnergySummation(
     models={"ZLinky_TIC"},
 )
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class Tier2SmartEnergySummation(
-    PolledSmartEnergySummation, id_suffix="tier2_summation_delivered"
-):
+class Tier2SmartEnergySummation(PolledSmartEnergySummation):
     """Tier 2 Smart Energy Metering summation sensor."""
 
-    SENSOR_ATTR: int | str = "current_tier2_summ_delivered"
-    _attr_name: str = "Tier 2 summation delivered"
+    _attribute_name = "current_tier2_summ_delivered"
+    _unique_id_suffix = "tier2_summation_delivered"
+    _attr_translation_key: str = "tier2_summation_delivered"
 
 
 @MULTI_MATCH(
@@ -695,13 +689,12 @@ class Tier2SmartEnergySummation(
     models={"ZLinky_TIC"},
 )
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class Tier3SmartEnergySummation(
-    PolledSmartEnergySummation, id_suffix="tier3_summation_delivered"
-):
+class Tier3SmartEnergySummation(PolledSmartEnergySummation):
     """Tier 3 Smart Energy Metering summation sensor."""
 
-    SENSOR_ATTR: int | str = "current_tier3_summ_delivered"
-    _attr_name: str = "Tier 3 summation delivered"
+    _attribute_name = "current_tier3_summ_delivered"
+    _unique_id_suffix = "tier3_summation_delivered"
+    _attr_translation_key: str = "tier3_summation_delivered"
 
 
 @MULTI_MATCH(
@@ -709,13 +702,12 @@ class Tier3SmartEnergySummation(
     models={"ZLinky_TIC"},
 )
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class Tier4SmartEnergySummation(
-    PolledSmartEnergySummation, id_suffix="tier4_summation_delivered"
-):
+class Tier4SmartEnergySummation(PolledSmartEnergySummation):
     """Tier 4 Smart Energy Metering summation sensor."""
 
-    SENSOR_ATTR: int | str = "current_tier4_summ_delivered"
-    _attr_name: str = "Tier 4 summation delivered"
+    _attribute_name = "current_tier4_summ_delivered"
+    _unique_id_suffix = "tier4_summation_delivered"
+    _attr_translation_key: str = "tier4_summation_delivered"
 
 
 @MULTI_MATCH(
@@ -723,13 +715,12 @@ class Tier4SmartEnergySummation(
     models={"ZLinky_TIC"},
 )
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class Tier5SmartEnergySummation(
-    PolledSmartEnergySummation, id_suffix="tier5_summation_delivered"
-):
+class Tier5SmartEnergySummation(PolledSmartEnergySummation):
     """Tier 5 Smart Energy Metering summation sensor."""
 
-    SENSOR_ATTR: int | str = "current_tier5_summ_delivered"
-    _attr_name: str = "Tier 5 summation delivered"
+    _attribute_name = "current_tier5_summ_delivered"
+    _unique_id_suffix = "tier5_summation_delivered"
+    _attr_translation_key: str = "tier5_summation_delivered"
 
 
 @MULTI_MATCH(
@@ -737,13 +728,12 @@ class Tier5SmartEnergySummation(
     models={"ZLinky_TIC"},
 )
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class Tier6SmartEnergySummation(
-    PolledSmartEnergySummation, id_suffix="tier6_summation_delivered"
-):
+class Tier6SmartEnergySummation(PolledSmartEnergySummation):
     """Tier 6 Smart Energy Metering summation sensor."""
 
-    SENSOR_ATTR: int | str = "current_tier6_summ_delivered"
-    _attr_name: str = "Tier 6 summation delivered"
+    _attribute_name = "current_tier6_summ_delivered"
+    _unique_id_suffix = "tier6_summation_delivered"
+    _attr_translation_key: str = "tier6_summation_delivered"
 
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_PRESSURE)
@@ -751,10 +741,9 @@ class Tier6SmartEnergySummation(
 class Pressure(Sensor):
     """Pressure sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.PRESSURE
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Pressure"
     _decimals = 0
     _attr_native_unit_of_measurement = UnitOfPressure.HPA
 
@@ -764,10 +753,9 @@ class Pressure(Sensor):
 class Temperature(Sensor):
     """Temperature Sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.TEMPERATURE
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Temperature"
     _divisor = 100
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
@@ -777,10 +765,10 @@ class Temperature(Sensor):
 class DeviceTemperature(Sensor):
     """Device Temperature Sensor."""
 
-    SENSOR_ATTR = "current_temperature"
+    _attribute_name = "current_temperature"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.TEMPERATURE
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Device temperature"
+    _attr_translation_key: str = "device_temperature"
     _divisor = 100
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -791,10 +779,9 @@ class DeviceTemperature(Sensor):
 class CarbonDioxideConcentration(Sensor):
     """Carbon Dioxide Concentration sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.CO2
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Carbon dioxide concentration"
     _decimals = 0
     _multiplier = 1e6
     _attr_native_unit_of_measurement = CONCENTRATION_PARTS_PER_MILLION
@@ -805,10 +792,9 @@ class CarbonDioxideConcentration(Sensor):
 class CarbonMonoxideConcentration(Sensor):
     """Carbon Monoxide Concentration sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.CO
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Carbon monoxide concentration"
     _decimals = 0
     _multiplier = 1e6
     _attr_native_unit_of_measurement = CONCENTRATION_PARTS_PER_MILLION
@@ -820,10 +806,9 @@ class CarbonMonoxideConcentration(Sensor):
 class VOCLevel(Sensor):
     """VOC Level sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "VOC level"
     _decimals = 0
     _multiplier = 1e6
     _attr_native_unit_of_measurement = CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
@@ -838,12 +823,11 @@ class VOCLevel(Sensor):
 class PPBVOCLevel(Sensor):
     """VOC Level sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_device_class: SensorDeviceClass = (
         SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS
     )
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "VOC level"
     _decimals = 0
     _multiplier = 1
     _attr_native_unit_of_measurement = CONCENTRATION_PARTS_PER_BILLION
@@ -854,10 +838,9 @@ class PPBVOCLevel(Sensor):
 class PM25(Sensor):
     """Particulate Matter 2.5 microns or less sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.PM25
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Particulate matter"
     _decimals = 0
     _multiplier = 1
     _attr_native_unit_of_measurement = CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
@@ -868,9 +851,9 @@ class PM25(Sensor):
 class FormaldehydeConcentration(Sensor):
     """Formaldehyde Concentration sensor."""
 
-    SENSOR_ATTR = "measured_value"
+    _attribute_name = "measured_value"
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
-    _attr_name: str = "Formaldehyde concentration"
+    _attr_translation_key: str = "formaldehyde"
     _decimals = 0
     _multiplier = 1e6
     _attr_native_unit_of_measurement = CONCENTRATION_PARTS_PER_MILLION
@@ -881,10 +864,11 @@ class FormaldehydeConcentration(Sensor):
     stop_on_match_group=CLUSTER_HANDLER_THERMOSTAT,
 )
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class ThermostatHVACAction(Sensor, id_suffix="hvac_action"):
+class ThermostatHVACAction(Sensor):
     """Thermostat HVAC action sensor."""
 
-    _attr_name: str = "HVAC action"
+    _unique_id_suffix = "hvac_action"
+    _attr_translation_key: str = "hvac_action"
 
     @classmethod
     def create_entity(
@@ -963,11 +947,6 @@ class ThermostatHVACAction(Sensor, id_suffix="hvac_action"):
             return HVACAction.IDLE
         return HVACAction.OFF
 
-    @callback
-    def async_set_state(self, *args, **kwargs) -> None:
-        """Handle state update from cluster handler."""
-        self.async_write_ha_state()
-
 
 @MULTI_MATCH(
     cluster_handler_names={CLUSTER_HANDLER_THERMOSTAT},
@@ -1005,17 +984,18 @@ class SinopeHVACAction(ThermostatHVACAction):
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_BASIC)
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class RSSISensor(Sensor, id_suffix="rssi"):
+class RSSISensor(Sensor):
     """RSSI sensor for a device."""
 
+    _attribute_name = "rssi"
+    _unique_id_suffix = "rssi"
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
     _attr_device_class: SensorDeviceClass | None = SensorDeviceClass.SIGNAL_STRENGTH
     _attr_native_unit_of_measurement: str | None = SIGNAL_STRENGTH_DECIBELS_MILLIWATT
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
     _attr_should_poll = True  # BaseZhaEntity defaults to False
-    _attr_name: str = "RSSI"
-    unique_id_suffix: str
+    _attr_translation_key: str = "rssi"
 
     @classmethod
     def create_entity(
@@ -1029,7 +1009,7 @@ class RSSISensor(Sensor, id_suffix="rssi"):
 
         Return entity if it is a supported configuration, otherwise return None
         """
-        key = f"{CLUSTER_HANDLER_BASIC}_{cls.unique_id_suffix}"
+        key = f"{CLUSTER_HANDLER_BASIC}_{cls._unique_id_suffix}"
         if ZHA_ENTITIES.prevent_entity_creation(Platform.SENSOR, zha_device.ieee, key):
             return None
         return cls(unique_id, zha_device, cluster_handlers, **kwargs)
@@ -1037,17 +1017,19 @@ class RSSISensor(Sensor, id_suffix="rssi"):
     @property
     def native_value(self) -> StateType:
         """Return the state of the entity."""
-        return getattr(self._zha_device.device, self.unique_id_suffix)
+        return getattr(self._zha_device.device, self._attribute_name)
 
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_BASIC)
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class LQISensor(RSSISensor, id_suffix="lqi"):
+class LQISensor(RSSISensor):
     """LQI sensor for a device."""
 
-    _attr_name: str = "LQI"
+    _attribute_name = "lqi"
+    _unique_id_suffix = "lqi"
     _attr_device_class = None
     _attr_native_unit_of_measurement = None
+    _attr_translation_key = "lqi"
 
 
 @MULTI_MATCH(
@@ -1057,38 +1039,41 @@ class LQISensor(RSSISensor, id_suffix="lqi"):
     },
 )
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class TimeLeft(Sensor, id_suffix="time_left"):
+class TimeLeft(Sensor):
     """Sensor that displays time left value."""
 
-    SENSOR_ATTR = "timer_time_left"
+    _attribute_name = "timer_time_left"
+    _unique_id_suffix = "time_left"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.DURATION
     _attr_icon = "mdi:timer"
-    _attr_name: str = "Time left"
+    _attr_translation_key: str = "timer_time_left"
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
 
 
 @MULTI_MATCH(cluster_handler_names="ikea_airpurifier")
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class IkeaDeviceRunTime(Sensor, id_suffix="device_run_time"):
+class IkeaDeviceRunTime(Sensor):
     """Sensor that displays device run time (in minutes)."""
 
-    SENSOR_ATTR = "device_run_time"
+    _attribute_name = "device_run_time"
+    _unique_id_suffix = "device_run_time"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.DURATION
     _attr_icon = "mdi:timer"
-    _attr_name: str = "Device run time"
+    _attr_translation_key: str = "device_run_time"
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
     _attr_entity_category: EntityCategory = EntityCategory.DIAGNOSTIC
 
 
 @MULTI_MATCH(cluster_handler_names="ikea_airpurifier")
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class IkeaFilterRunTime(Sensor, id_suffix="filter_run_time"):
+class IkeaFilterRunTime(Sensor):
     """Sensor that displays run time of the current filter (in minutes)."""
 
-    SENSOR_ATTR = "filter_run_time"
+    _attribute_name = "filter_run_time"
+    _unique_id_suffix = "filter_run_time"
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.DURATION
     _attr_icon = "mdi:timer"
-    _attr_name: str = "Filter run time"
+    _attr_translation_key: str = "filter_run_time"
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
     _attr_entity_category: EntityCategory = EntityCategory.DIAGNOSTIC
 
@@ -1102,11 +1087,12 @@ class AqaraFeedingSource(types.enum8):
 
 @MULTI_MATCH(cluster_handler_names="opple_cluster", models={"aqara.feeder.acn001"})
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class AqaraPetFeederLastFeedingSource(Sensor, id_suffix="last_feeding_source"):
+class AqaraPetFeederLastFeedingSource(Sensor):
     """Sensor that displays the last feeding source of pet feeder."""
 
-    SENSOR_ATTR = "last_feeding_source"
-    _attr_name: str = "Last feeding source"
+    _attribute_name = "last_feeding_source"
+    _unique_id_suffix = "last_feeding_source"
+    _attr_translation_key: str = "last_feeding_source"
     _attr_icon = "mdi:devices"
 
     def formatter(self, value: int) -> int | float | None:
@@ -1116,32 +1102,35 @@ class AqaraPetFeederLastFeedingSource(Sensor, id_suffix="last_feeding_source"):
 
 @MULTI_MATCH(cluster_handler_names="opple_cluster", models={"aqara.feeder.acn001"})
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class AqaraPetFeederLastFeedingSize(Sensor, id_suffix="last_feeding_size"):
+class AqaraPetFeederLastFeedingSize(Sensor):
     """Sensor that displays the last feeding size of the pet feeder."""
 
-    SENSOR_ATTR = "last_feeding_size"
-    _attr_name: str = "Last feeding size"
+    _attribute_name = "last_feeding_size"
+    _unique_id_suffix = "last_feeding_size"
+    _attr_translation_key: str = "last_feeding_size"
     _attr_icon: str = "mdi:counter"
 
 
 @MULTI_MATCH(cluster_handler_names="opple_cluster", models={"aqara.feeder.acn001"})
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class AqaraPetFeederPortionsDispensed(Sensor, id_suffix="portions_dispensed"):
+class AqaraPetFeederPortionsDispensed(Sensor):
     """Sensor that displays the number of portions dispensed by the pet feeder."""
 
-    SENSOR_ATTR = "portions_dispensed"
-    _attr_name: str = "Portions dispensed today"
+    _attribute_name = "portions_dispensed"
+    _unique_id_suffix = "portions_dispensed"
+    _attr_translation_key: str = "portions_dispensed_today"
     _attr_state_class: SensorStateClass = SensorStateClass.TOTAL_INCREASING
     _attr_icon: str = "mdi:counter"
 
 
 @MULTI_MATCH(cluster_handler_names="opple_cluster", models={"aqara.feeder.acn001"})
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class AqaraPetFeederWeightDispensed(Sensor, id_suffix="weight_dispensed"):
+class AqaraPetFeederWeightDispensed(Sensor):
     """Sensor that displays the weight dispensed by the pet feeder."""
 
-    SENSOR_ATTR = "weight_dispensed"
-    _attr_name: str = "Weight dispensed today"
+    _attribute_name = "weight_dispensed"
+    _unique_id_suffix = "weight_dispensed"
+    _attr_translation_key: str = "weight_dispensed_today"
     _attr_native_unit_of_measurement = UnitOfMass.GRAMS
     _attr_state_class: SensorStateClass = SensorStateClass.TOTAL_INCREASING
     _attr_icon: str = "mdi:weight-gram"
@@ -1149,11 +1138,12 @@ class AqaraPetFeederWeightDispensed(Sensor, id_suffix="weight_dispensed"):
 
 @MULTI_MATCH(cluster_handler_names="opple_cluster", models={"lumi.sensor_smoke.acn03"})
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class AqaraSmokeDensityDbm(Sensor, id_suffix="smoke_density_dbm"):
+class AqaraSmokeDensityDbm(Sensor):
     """Sensor that displays the smoke density of an Aqara smoke sensor in dB/m."""
 
-    SENSOR_ATTR = "smoke_density_dbm"
-    _attr_name: str = "Smoke density"
+    _attribute_name = "smoke_density_dbm"
+    _unique_id_suffix = "smoke_density_dbm"
+    _attr_translation_key: str = "smoke_density"
     _attr_native_unit_of_measurement = "dB/m"
     _attr_state_class: SensorStateClass = SensorStateClass.MEASUREMENT
     _attr_icon: str = "mdi:google-circles-communities"
