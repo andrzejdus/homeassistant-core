@@ -269,4 +269,3 @@ class Price(ClusterHandler):
 @registries.ZIGBEE_CLUSTER_HANDLER_REGISTRY.register(smartenergy.Tunneling.cluster_id)
 class Tunneling(ClusterHandler):
     """Tunneling cluster handler."""
-    

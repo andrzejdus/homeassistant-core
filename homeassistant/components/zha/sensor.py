@@ -394,7 +394,10 @@ class ElectricalMeasurementRMSCurrentPhB(ElectricalMeasurementRMSCurrent):
     _attr_name = "RMS current phase b"
 
 
-@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
+@MULTI_MATCH(
+    cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT,
+    manufacturers={"_TZE204_ves1ycwx", "_TZE200_ves1ycwx"}
+)
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
 class ElectricalMeasurementRMSCurrentPhC(ElectricalMeasurementRMSCurrent):
     """RMS current measurement."""
