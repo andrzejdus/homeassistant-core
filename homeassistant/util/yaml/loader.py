@@ -1,7 +1,7 @@
 """Custom loader."""
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import suppress
 import fnmatch
 from io import StringIO, TextIOWrapper
@@ -23,6 +23,7 @@ except ImportError:
     )
 
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.frame import report
 
 from .const import SECRET_YAML
 from .objects import Input, NodeDictClass, NodeListClass, NodeStrClass
@@ -136,6 +137,37 @@ class FastSafeLoader(FastestAvailableSafeLoader, _LoaderMixin):
         self.secrets = secrets
 
 
+class SafeLoader(FastSafeLoader):
+    """Provided for backwards compatibility. Logs when instantiated."""
+
+    def __init__(*args: Any, **kwargs: Any) -> None:
+        """Log a warning and call super."""
+        SafeLoader.__report_deprecated()
+        FastSafeLoader.__init__(*args, **kwargs)
+
+    @classmethod
+    def add_constructor(cls, tag: str, constructor: Callable) -> None:
+        """Log a warning and call super."""
+        SafeLoader.__report_deprecated()
+        FastSafeLoader.add_constructor(tag, constructor)
+
+    @classmethod
+    def add_multi_constructor(
+        cls, tag_prefix: str, multi_constructor: Callable
+    ) -> None:
+        """Log a warning and call super."""
+        SafeLoader.__report_deprecated()
+        FastSafeLoader.add_multi_constructor(tag_prefix, multi_constructor)
+
+    @staticmethod
+    def __report_deprecated() -> None:
+        """Log deprecation warning."""
+        report(
+            "uses deprecated 'SafeLoader' instead of 'FastSafeLoader', "
+            "which will stop working in HA Core 2024.6,"
+        )
+
+
 class PythonSafeLoader(yaml.SafeLoader, _LoaderMixin):
     """Python safe loader."""
 
@@ -143,6 +175,37 @@ class PythonSafeLoader(yaml.SafeLoader, _LoaderMixin):
         """Initialize a safe line loader."""
         super().__init__(stream)
         self.secrets = secrets
+
+
+class SafeLineLoader(PythonSafeLoader):
+    """Provided for backwards compatibility. Logs when instantiated."""
+
+    def __init__(*args: Any, **kwargs: Any) -> None:
+        """Log a warning and call super."""
+        SafeLineLoader.__report_deprecated()
+        PythonSafeLoader.__init__(*args, **kwargs)
+
+    @classmethod
+    def add_constructor(cls, tag: str, constructor: Callable) -> None:
+        """Log a warning and call super."""
+        SafeLineLoader.__report_deprecated()
+        PythonSafeLoader.add_constructor(tag, constructor)
+
+    @classmethod
+    def add_multi_constructor(
+        cls, tag_prefix: str, multi_constructor: Callable
+    ) -> None:
+        """Log a warning and call super."""
+        SafeLineLoader.__report_deprecated()
+        PythonSafeLoader.add_multi_constructor(tag_prefix, multi_constructor)
+
+    @staticmethod
+    def __report_deprecated() -> None:
+        """Log deprecation warning."""
+        report(
+            "uses deprecated 'SafeLineLoader' instead of 'PythonSafeLoader', "
+            "which will stop working in HA Core 2024.6,"
+        )
 
 
 LoaderType = FastSafeLoader | PythonSafeLoader
@@ -238,7 +301,7 @@ def _add_reference(  # type: ignore[no-untyped-def]
 
 
 def _include_yaml(loader: LoaderType, node: yaml.nodes.Node) -> JSON_TYPE:
-    """Load another YAML file and embeds it using the !include tag.
+    """Load another YAML file and embed it using the !include tag.
 
     Example:
         device_tracker: !include device_tracker.yaml
@@ -340,7 +403,12 @@ def _handle_mapping_tag(
             raise yaml.MarkedYAMLError(
                 context=f'invalid key: "{key}"',
                 context_mark=yaml.Mark(
-                    fname, 0, line, -1, None, None  # type: ignore[arg-type]
+                    fname,
+                    0,
+                    line,
+                    -1,
+                    None,
+                    None,  # type: ignore[arg-type]
                 ),
             ) from exc
 
