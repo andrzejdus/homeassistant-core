@@ -434,12 +434,12 @@ class ElectricalMeasurementFrequency(ElectricalMeasurement):
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)	
 # pylint: disable-next=hass-invalid-inheritance # needs fixing	
-class ElectricalMeasurementPowerFactor(ElectricalMeasurement):	
-    """powerfactor measurement."""	
+class ElectricalMeasurementPowerFactor(ElectricalMeasurement):
+    """powerfactor measurement."""
 
-    _attribute_name = "power_factor"	
-    _unique_id_suffix = "power_factor"	
-    _attr_device_class: SensorDeviceClass = SensorDeviceClass.POWER_FACTOR	
+    _attribute_name = "power_factor"
+    _unique_id_suffix = "power_factor"
+    _attr_device_class: SensorDeviceClass = SensorDeviceClass.POWER_FACTOR
     _attr_native_unit_of_measurement = PERCENTAGE
 
 
