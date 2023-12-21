@@ -432,14 +432,15 @@ class ElectricalMeasurementFrequency(ElectricalMeasurement):
     _div_mul_prefix = "ac_frequency"
 
 
-@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
-# pylint: disable-next=hass-invalid-inheritance # needs fixing
-class ElectricalMeasurementPowerFactorPhC(ElectricalMeasurementPowerFactor):
-    """Frequency measurement."""
+@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)	
+# pylint: disable-next=hass-invalid-inheritance # needs fixing	
+class ElectricalMeasurementPowerFactor(ElectricalMeasurement):	
+    """powerfactor measurement."""	
 
-    _attribute_name = "power_factor_ph_c"
-    _unique_id_suffix = "power_factor_ph_c"
-    _attr_name = "Power factor phase c"
+    _attribute_name = "power_factor"	
+    _unique_id_suffix = "power_factor"	
+    _attr_device_class: SensorDeviceClass = SensorDeviceClass.POWER_FACTOR	
+    _attr_native_unit_of_measurement = PERCENTAGE
 
 
 @MULTI_MATCH(
