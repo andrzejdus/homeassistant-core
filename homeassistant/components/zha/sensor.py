@@ -353,26 +353,6 @@ class ElectricalMeasurementApparentPower(ElectricalMeasurement):
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
-class ElectricalMeasurementApparentPowerPhC(ElectricalMeasurementApparentPower):
-    """Apparent power measurement."""
-
-    _attribute_name = "apparent_power_ph_b"
-    _unique_id_suffix = "apparent_power_ph_b"
-    _attr_name = "Apparent power phase b"
-
-
-@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
-# pylint: disable-next=hass-invalid-inheritance # needs fixing
-class ElectricalMeasurementApparentPowerPhC(ElectricalMeasurementApparentPower):
-    """Apparent power measurement."""
-
-    _attribute_name = "apparent_power_ph_c"
-    _unique_id_suffix = "apparent_power_ph_c"
-    _attr_name = "Apparent power phase c"
-
-
-@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
-# pylint: disable-next=hass-invalid-inheritance # needs fixing
 class ElectricalMeasurementRMSCurrent(ElectricalMeasurement):
     """RMS current measurement."""
 
@@ -450,27 +430,6 @@ class ElectricalMeasurementFrequency(ElectricalMeasurement):
     _attr_translation_key: str = "ac_frequency"
     _attr_native_unit_of_measurement = UnitOfFrequency.HERTZ
     _div_mul_prefix = "ac_frequency"
-
-
-@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
-# pylint: disable-next=hass-invalid-inheritance # needs fixing
-class ElectricalMeasurementPowerFactor(ElectricalMeasurement):
-    """Frequency measurement."""
-
-    _attribute_name = "power_factor"
-    _unique_id_suffix = "power_factor"
-    _attr_device_class: SensorDeviceClass = SensorDeviceClass.POWER_FACTOR
-    _attr_native_unit_of_measurement = PERCENTAGE
-
-
-@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
-# pylint: disable-next=hass-invalid-inheritance # needs fixing
-class ElectricalMeasurementPowerFactorPhB(ElectricalMeasurementPowerFactor):
-    """Frequency measurement."""
-
-    _attribute_name = "power_factor_ph_b"
-    _unique_id_suffix = "power_factor_ph_b"
-    _attr_name = "Power factor phase b"
 
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
