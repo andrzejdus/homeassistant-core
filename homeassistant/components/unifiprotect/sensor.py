@@ -54,7 +54,7 @@ _LOGGER = logging.getLogger(__name__)
 OBJECT_TYPE_NONE = "none"
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProtectSensorEntityDescription(
     ProtectRequiredKeysMixin[T], SensorEntityDescription
 ):
@@ -71,7 +71,7 @@ class ProtectSensorEntityDescription(
         return value
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProtectSensorEventEntityDescription(
     ProtectEventMixin[T], SensorEntityDescription
 ):
@@ -527,7 +527,7 @@ EVENT_SENSORS: tuple[ProtectSensorEventEntityDescription, ...] = (
         name="License Plate Detected",
         icon="mdi:car",
         translation_key="license_plate",
-        ufp_value="is_smart_detected",
+        ufp_value="is_license_plate_currently_detected",
         ufp_required_field="can_detect_license_plate",
         ufp_event_obj="last_license_plate_detect_event",
     ),
@@ -730,6 +730,15 @@ class ProtectDeviceSensor(ProtectDeviceEntity, SensorEntity):
             self._attr_native_value != previous_value
             or self._attr_available != previous_available
         ):
+            _LOGGER.debug(
+                "Updating state [%s (%s)] %s (%s) -> %s (%s)",
+                device.name,
+                device.mac,
+                previous_value,
+                previous_available,
+                self._attr_native_value,
+                self._attr_available,
+            )
             self.async_write_ha_state()
 
 
@@ -772,7 +781,7 @@ class ProtectEventSensor(EventEntityMixin, SensorEntity):
         EventEntityMixin._async_update_device_from_protect(self, device)
         event = self._event
         entity_description = self.entity_description
-        is_on = entity_description.get_is_on(event)
+        is_on = entity_description.get_is_on(self.device, self._event)
         is_license_plate = (
             entity_description.ufp_event_obj == "last_license_plate_detect_event"
         )

@@ -182,6 +182,16 @@ class TPLinkSmartBulb(CoordinatedTPLinkEntity, LightEntity):
             self._attr_unique_id = legacy_device_id(device)
         else:
             self._attr_unique_id = device.mac.replace(":", "").upper()
+        modes: set[ColorMode] = set()
+        if device.is_variable_color_temp:
+            modes.add(ColorMode.COLOR_TEMP)
+        if device.is_color:
+            modes.add(ColorMode.HS)
+        if device.is_dimmable:
+            modes.add(ColorMode.BRIGHTNESS)
+        if not modes:
+            modes.add(ColorMode.ONOFF)
+        self._attr_supported_color_modes = modes
 
     @callback
     def _async_extract_brightness_transition(
@@ -210,6 +220,26 @@ class TPLinkSmartBulb(CoordinatedTPLinkEntity, LightEntity):
         hue, sat = tuple(int(val) for val in hs_color)
         await self.device.set_hsv(hue, sat, brightness, transition=transition)
 
+    async def _async_set_color_temp(
+        self, color_temp: float | int, brightness: int | None, transition: int | None
+    ) -> None:
+        device = self.device
+        valid_temperature_range = device.valid_temperature_range
+        requested_color_temp = round(color_temp)
+        # Clamp color temp to valid range
+        # since if the light in a group we will
+        # get requests for color temps for the range
+        # of the group and not the light
+        clamped_color_temp = min(
+            valid_temperature_range.max,
+            max(valid_temperature_range.min, requested_color_temp),
+        )
+        await device.set_color_temp(
+            clamped_color_temp,
+            brightness=brightness,
+            transition=transition,
+        )
+
     async def _async_turn_on_with_brightness(
         self, brightness: int | None, transition: int | None
     ) -> None:
@@ -224,10 +254,8 @@ class TPLinkSmartBulb(CoordinatedTPLinkEntity, LightEntity):
         """Turn the light on."""
         brightness, transition = self._async_extract_brightness_transition(**kwargs)
         if ATTR_COLOR_TEMP_KELVIN in kwargs:
-            await self.device.set_color_temp(
-                int(kwargs[ATTR_COLOR_TEMP_KELVIN]),
-                brightness=brightness,
-                transition=transition,
+            await self._async_set_color_temp(
+                kwargs[ATTR_COLOR_TEMP_KELVIN], brightness, transition
             )
         if ATTR_HS_COLOR in kwargs:
             await self._async_set_hsv(kwargs[ATTR_HS_COLOR], brightness, transition)
@@ -268,22 +296,6 @@ class TPLinkSmartBulb(CoordinatedTPLinkEntity, LightEntity):
         return hue, saturation
 
     @property
-    def supported_color_modes(self) -> set[ColorMode]:
-        """Return list of available color modes."""
-        modes: set[ColorMode] = set()
-        if self.device.is_variable_color_temp:
-            modes.add(ColorMode.COLOR_TEMP)
-        if self.device.is_color:
-            modes.add(ColorMode.HS)
-        if self.device.is_dimmable:
-            modes.add(ColorMode.BRIGHTNESS)
-
-        if not modes:
-            modes.add(ColorMode.ONOFF)
-
-        return modes
-
-    @property
     def color_mode(self) -> ColorMode:
         """Return the active color mode."""
         if self.device.is_color:
@@ -300,11 +312,7 @@ class TPLinkSmartLightStrip(TPLinkSmartBulb):
     """Representation of a TPLink Smart Light Strip."""
 
     device: SmartLightStrip
-
-    @property
-    def supported_features(self) -> LightEntityFeature:
-        """Flag supported features."""
-        return super().supported_features | LightEntityFeature.EFFECT
+    _attr_supported_features = LightEntityFeature.TRANSITION | LightEntityFeature.EFFECT
 
     @property
     def effect_list(self) -> list[str] | None:
@@ -334,10 +342,8 @@ class TPLinkSmartLightStrip(TPLinkSmartBulb):
                 # we have to set an HSV value to clear the effect
                 # before we can set a color temp
                 await self.device.set_hsv(0, 0, brightness)
-            await self.device.set_color_temp(
-                int(kwargs[ATTR_COLOR_TEMP_KELVIN]),
-                brightness=brightness,
-                transition=transition,
+            await self._async_set_color_temp(
+                kwargs[ATTR_COLOR_TEMP_KELVIN], brightness, transition
             )
         elif ATTR_HS_COLOR in kwargs:
             await self._async_set_hsv(kwargs[ATTR_HS_COLOR], brightness, transition)
