@@ -119,6 +119,8 @@ class MeteringClusterHandler(ClusterHandler):
             attr=Metering.AttributeDefs.status.name,
             config=REPORT_CONFIG_ASAP,
         ),
+        AttrReportConfig(attr="current_summ_received", config=REPORT_CONFIG_DEFAULT),
+        AttrReportConfig(attr="status", config=REPORT_CONFIG_ASAP),
     )
     ZCL_INIT_ATTRS = {
         Metering.AttributeDefs.demand_formatting.name: True,

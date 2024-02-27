@@ -1,6 +1,7 @@
 {
   "domain": "zha",
-  "name": "Zigbee Home Automation",
+  "name": "Zigbee Home Automation (custom)",
+  "version": "3.111",
   "after_dependencies": ["onboarding", "usb"],
   "codeowners": ["@dmulcahey", "@adminiuga", "@puddly", "@TheJulianJES"],
   "config_flow": true,

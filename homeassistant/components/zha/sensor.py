@@ -376,6 +376,30 @@ class ElectricalMeasurement(PollableSensor):
 
 
 @MULTI_MATCH(
+    cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT
+)
+# pylint: disable-next=hass-invalid-inheritance # needs fixing
+class ElectricalMeasurementPhB(ElectricalMeasurement):
+    """Active power measurement."""
+
+    _attribute_name = "active_power_ph_b"
+    _unique_id_suffix = "active_power_ph_b"
+    _attr_name = "Active power phase b"
+
+
+@MULTI_MATCH(
+    cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT
+)
+# pylint: disable-next=hass-invalid-inheritance # needs fixing
+class ElectricalMeasurementPhC(ElectricalMeasurement):
+    """Active power measurement."""
+
+    _attribute_name = "active_power_ph_c"
+    _unique_id_suffix = "active_power_ph_c"
+    _attr_name = "Active power phase c"
+
+
+@MULTI_MATCH(
     cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT,
     stop_on_match_group=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT,
 )
@@ -410,6 +434,30 @@ class ElectricalMeasurementRMSCurrent(PolledElectricalMeasurement):
     _attr_device_class: SensorDeviceClass = SensorDeviceClass.CURRENT
     _attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
     _div_mul_prefix = "ac_current"
+    _decimals = 2
+
+
+@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
+# pylint: disable-next=hass-invalid-inheritance # needs fixing
+class ElectricalMeasurementRMSCurrentPhB(ElectricalMeasurementRMSCurrent):
+    """RMS current measurement."""
+
+    _attribute_name = "rms_current_ph_b"
+    _unique_id_suffix = "rms_current_ph_b"
+    _attr_name = "RMS current phase b"
+
+
+@MULTI_MATCH(
+    cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT,
+    manufacturers={"_TZE204_ves1ycwx", "_TZE200_ves1ycwx"}
+)
+# pylint: disable-next=hass-invalid-inheritance # needs fixing
+class ElectricalMeasurementRMSCurrentPhC(ElectricalMeasurementRMSCurrent):
+    """RMS current measurement."""
+
+    _attribute_name = "rms_current_ph_c"
+    _unique_id_suffix = "rms_current_ph_c"
+    _attr_name = "RMS current phase c"
 
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
@@ -427,6 +475,26 @@ class ElectricalMeasurementRMSVoltage(PolledElectricalMeasurement):
 
 @MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
 # pylint: disable-next=hass-invalid-inheritance # needs fixing
+class ElectricalMeasurementRMSVoltagePhB(ElectricalMeasurementRMSVoltage):
+    """RMS Voltage measurement."""
+
+    _attribute_name = "rms_voltage_ph_b"
+    _unique_id_suffix = "rms_voltage_ph_b"
+    _attr_name = "RMS voltage phase b"
+
+
+@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
+# pylint: disable-next=hass-invalid-inheritance # needs fixing
+class ElectricalMeasurementRMSVoltagePhC(ElectricalMeasurementRMSVoltage):
+    """RMS Voltage measurement."""
+
+    _attribute_name = "rms_voltage_ph_c"
+    _unique_id_suffix = "rms_voltage_ph_c"
+    _attr_name = "RMS voltage phase c"
+
+
+@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
+# pylint: disable-next=hass-invalid-inheritance # needs fixing
 class ElectricalMeasurementFrequency(PolledElectricalMeasurement):
     """Frequency measurement."""
 
@@ -439,8 +507,8 @@ class ElectricalMeasurementFrequency(PolledElectricalMeasurement):
     _div_mul_prefix = "ac_frequency"
 
 
-@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)
-# pylint: disable-next=hass-invalid-inheritance # needs fixing
+@MULTI_MATCH(cluster_handler_names=CLUSTER_HANDLER_ELECTRICAL_MEASUREMENT)	
+# pylint: disable-next=hass-invalid-inheritance # needs fixing	
 class ElectricalMeasurementPowerFactor(PolledElectricalMeasurement):
     """Power Factor measurement."""
 
@@ -729,6 +797,17 @@ class SmartEnergySummation(SmartEnergyMetering):
         )
         return round(cooked, 3)
 
+@MULTI_MATCH(
+    cluster_handler_names=CLUSTER_HANDLER_SMARTENERGY_METERING,
+    stop_on_match_group=CLUSTER_HANDLER_SMARTENERGY_METERING
+)
+# pylint: disable-next=hass-invalid-inheritance # needs fixings
+class SmartEnergySummationReceived(SmartEnergySummation):
+    """Smart Energy Metering summation sensor."""
+
+    _attribute_name = "current_summ_received"
+    _unique_id_suffix = "summation_received"
+    _attr_name = "Energy exported"
 
 @MULTI_MATCH(
     cluster_handler_names=CLUSTER_HANDLER_SMARTENERGY_METERING,

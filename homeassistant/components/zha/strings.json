@@ -831,6 +831,9 @@
       "summation_delivered": {
         "name": "Summation delivered"
       },
+      "summation_received": {
+        "name": "Summation received"
+      },
       "tier1_summation_delivered": {
         "name": "Tier 1 summation delivered"
       },
