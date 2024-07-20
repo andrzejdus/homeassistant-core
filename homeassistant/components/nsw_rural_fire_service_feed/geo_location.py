@@ -1,4 +1,5 @@
 """Support for NSW Rural Fire Service Feeds."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -12,7 +13,10 @@ from aio_geojson_nsw_rfs_incidents.feed_entry import (
 )
 import voluptuous as vol
 
-from homeassistant.components.geo_location import PLATFORM_SCHEMA, GeolocationEvent
+from homeassistant.components.geo_location import (
+    PLATFORM_SCHEMA as GEO_LOCATION_PLATFORM_SCHEMA,
+    GeolocationEvent,
+)
 from homeassistant.const import (
     ATTR_LOCATION,
     CONF_LATITUDE,
@@ -58,7 +62,7 @@ SOURCE = "nsw_rural_fire_service_feed"
 
 VALID_CATEGORIES = ["Advice", "Emergency Warning", "Not Applicable", "Watch and Act"]
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+PLATFORM_SCHEMA = GEO_LOCATION_PLATFORM_SCHEMA.extend(
     {
         vol.Optional(CONF_CATEGORIES, default=[]): vol.All(
             cv.ensure_list, [vol.In(VALID_CATEGORIES)]

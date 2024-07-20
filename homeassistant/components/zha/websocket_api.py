@@ -1,9 +1,10 @@
 """Web socket API for Zigbee Home Automation devices."""
+
 from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
 import voluptuous as vol
 import zigpy.backups
@@ -20,6 +21,7 @@ from homeassistant.helpers import entity_registry as er
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.service import async_register_admin_service
+from homeassistant.helpers.typing import VolDictType, VolSchemaType
 
 from .api import (
     async_change_channel,
@@ -117,18 +119,15 @@ IEEE_SERVICE = "ieee_based_service"
 
 IEEE_SCHEMA = vol.All(cv.string, EUI64.convert)
 
-# typing typevar
-_T = TypeVar("_T")
 
-
-def _ensure_list_if_present(value: _T | None) -> list[_T] | list[Any] | None:
+def _ensure_list_if_present[_T](value: _T | None) -> list[_T] | list[Any] | None:
     """Wrap value in list if it is provided and not one."""
     if value is None:
         return None
     return cast("list[_T]", value) if isinstance(value, list) else [value]
 
 
-SERVICE_PERMIT_PARAMS = {
+SERVICE_PERMIT_PARAMS: VolDictType = {
     vol.Optional(ATTR_IEEE): IEEE_SCHEMA,
     vol.Optional(ATTR_DURATION, default=60): vol.All(
         vol.Coerce(int), vol.Range(0, 254)
@@ -140,7 +139,7 @@ SERVICE_PERMIT_PARAMS = {
     vol.Exclusive(ATTR_QR_CODE, "install_code"): vol.All(cv.string, qr_to_install_code),
 }
 
-SERVICE_SCHEMAS = {
+SERVICE_SCHEMAS: dict[str, VolSchemaType] = {
     SERVICE_PERMIT: vol.Schema(
         vol.All(
             cv.deprecated(ATTR_IEEE_ADDRESS, replacement_key=ATTR_IEEE),
@@ -387,30 +386,30 @@ async def websocket_get_groupable_devices(
     zha_gateway = get_zha_gateway(hass)
 
     devices = [device for device in zha_gateway.devices.values() if device.is_groupable]
-    groupable_devices = []
+    groupable_devices: list[dict[str, Any]] = []
 
     for device in devices:
         entity_refs = zha_gateway.device_registry[device.ieee]
-        for ep_id in device.async_get_groupable_endpoints():
-            groupable_devices.append(
-                {
-                    "endpoint_id": ep_id,
-                    "entities": [
-                        {
-                            "name": _get_entity_name(zha_gateway, entity_ref),
-                            "original_name": _get_entity_original_name(
-                                zha_gateway, entity_ref
-                            ),
-                        }
-                        for entity_ref in entity_refs
-                        if list(entity_ref.cluster_handlers.values())[
-                            0
-                        ].cluster.endpoint.endpoint_id
-                        == ep_id
-                    ],
-                    "device": device.zha_device_info,
-                }
-            )
+        groupable_devices.extend(
+            {
+                "endpoint_id": ep_id,
+                "entities": [
+                    {
+                        "name": _get_entity_name(zha_gateway, entity_ref),
+                        "original_name": _get_entity_original_name(
+                            zha_gateway, entity_ref
+                        ),
+                    }
+                    for entity_ref in entity_refs
+                    if list(entity_ref.cluster_handlers.values())[
+                        0
+                    ].cluster.endpoint.endpoint_id
+                    == ep_id
+                ],
+                "device": device.zha_device_info,
+            }
+            for ep_id in device.async_get_groupable_endpoints()
+        )
 
     connection.send_result(msg[ID], groupable_devices)
 
@@ -445,7 +444,7 @@ async def websocket_get_device(
     if not (zha_device := zha_gateway.devices.get(ieee)):
         connection.send_message(
             websocket_api.error_message(
-                msg[ID], websocket_api.const.ERR_NOT_FOUND, "ZHA Device not found"
+                msg[ID], websocket_api.ERR_NOT_FOUND, "ZHA Device not found"
             )
         )
         return
@@ -472,7 +471,7 @@ async def websocket_get_group(
     if not (zha_group := zha_gateway.groups.get(group_id)):
         connection.send_message(
             websocket_api.error_message(
-                msg[ID], websocket_api.const.ERR_NOT_FOUND, "ZHA Group not found"
+                msg[ID], websocket_api.ERR_NOT_FOUND, "ZHA Group not found"
             )
         )
         return
@@ -520,9 +519,9 @@ async def websocket_remove_groups(
     group_ids: list[int] = msg[GROUP_IDS]
 
     if len(group_ids) > 1:
-        tasks = []
-        for group_id in group_ids:
-            tasks.append(zha_gateway.async_remove_zigpy_group(group_id))
+        tasks = [
+            zha_gateway.async_remove_zigpy_group(group_id) for group_id in group_ids
+        ]
         await asyncio.gather(*tasks)
     else:
         await zha_gateway.async_remove_zigpy_group(group_ids[0])
@@ -550,7 +549,7 @@ async def websocket_add_group_members(
     if not (zha_group := zha_gateway.groups.get(group_id)):
         connection.send_message(
             websocket_api.error_message(
-                msg[ID], websocket_api.const.ERR_NOT_FOUND, "ZHA Group not found"
+                msg[ID], websocket_api.ERR_NOT_FOUND, "ZHA Group not found"
             )
         )
         return
@@ -580,7 +579,7 @@ async def websocket_remove_group_members(
     if not (zha_group := zha_gateway.groups.get(group_id)):
         connection.send_message(
             websocket_api.error_message(
-                msg[ID], websocket_api.const.ERR_NOT_FOUND, "ZHA Group not found"
+                msg[ID], websocket_api.ERR_NOT_FOUND, "ZHA Group not found"
             )
         )
         return
@@ -1033,7 +1032,7 @@ async def async_binding_operation(
             )
         )
     res = await asyncio.gather(*(t[0] for t in bind_tasks), return_exceptions=True)
-    for outcome, log_msg in zip(res, bind_tasks):
+    for outcome, log_msg in zip(res, bind_tasks, strict=False):
         if isinstance(outcome, Exception):
             fmt = f"{log_msg[1]} failed: %s"
         else:
@@ -1097,7 +1096,7 @@ async def websocket_update_zha_configuration(
     """Update the ZHA configuration."""
     zha_gateway = get_zha_gateway(hass)
     options = zha_gateway.config_entry.options
-    data_to_save = {**options, **{CUSTOM_CONFIGURATION: msg["data"]}}
+    data_to_save = {**options, CUSTOM_CONFIGURATION: msg["data"]}
 
     for section, schema in ZHA_CONFIG_SCHEMAS.items():
         for entry in schema.schema:
@@ -1216,7 +1215,7 @@ async def websocket_restore_network_backup(
     try:
         await application_controller.backups.restore_backup(backup)
     except ValueError as err:
-        connection.send_error(msg[ID], websocket_api.const.ERR_INVALID_FORMAT, str(err))
+        connection.send_error(msg[ID], websocket_api.ERR_INVALID_FORMAT, str(err))
     else:
         connection.send_result(msg[ID])
 
@@ -1313,7 +1312,7 @@ def async_load_api(hass: HomeAssistant) -> None:
                 manufacturer=manufacturer,
             )
         else:
-            raise ValueError(f"Device with IEEE {str(ieee)} not found")
+            raise ValueError(f"Device with IEEE {ieee!s} not found")
 
         _LOGGER.debug(
             (
@@ -1393,7 +1392,7 @@ def async_load_api(hass: HomeAssistant) -> None:
                 manufacturer,
             )
         else:
-            raise ValueError(f"Device with IEEE {str(ieee)} not found")
+            raise ValueError(f"Device with IEEE {ieee!s} not found")
 
     async_register_admin_service(
         hass,

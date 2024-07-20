@@ -1,4 +1,5 @@
 """Common test tools."""
+
 import asyncio
 from unittest.mock import MagicMock, patch
 
@@ -14,10 +15,11 @@ from dsmr_parser.obis_references import (
 )
 from dsmr_parser.objects import CosemObject
 import pytest
+from typing_extensions import Generator
 
 
 @pytest.fixture
-async def dsmr_connection_fixture(hass):
+def dsmr_connection_fixture() -> Generator[tuple[MagicMock, MagicMock, MagicMock]]:
     """Fixture that mocks serial connection."""
 
     transport = MagicMock(spec=asyncio.Transport)
@@ -29,17 +31,23 @@ async def dsmr_connection_fixture(hass):
 
     connection_factory = MagicMock(wraps=connection_factory)
 
-    with patch(
-        "homeassistant.components.dsmr.sensor.create_dsmr_reader", connection_factory
-    ), patch(
-        "homeassistant.components.dsmr.sensor.create_tcp_dsmr_reader",
-        connection_factory,
+    with (
+        patch(
+            "homeassistant.components.dsmr.sensor.create_dsmr_reader",
+            connection_factory,
+        ),
+        patch(
+            "homeassistant.components.dsmr.sensor.create_tcp_dsmr_reader",
+            connection_factory,
+        ),
     ):
         yield (connection_factory, transport, protocol)
 
 
 @pytest.fixture
-async def rfxtrx_dsmr_connection_fixture(hass):
+def rfxtrx_dsmr_connection_fixture() -> (
+    Generator[tuple[MagicMock, MagicMock, MagicMock]]
+):
     """Fixture that mocks RFXtrx connection."""
 
     transport = MagicMock(spec=asyncio.Transport)
@@ -51,18 +59,23 @@ async def rfxtrx_dsmr_connection_fixture(hass):
 
     connection_factory = MagicMock(wraps=connection_factory)
 
-    with patch(
-        "homeassistant.components.dsmr.sensor.create_rfxtrx_dsmr_reader",
-        connection_factory,
-    ), patch(
-        "homeassistant.components.dsmr.sensor.create_rfxtrx_tcp_dsmr_reader",
-        connection_factory,
+    with (
+        patch(
+            "homeassistant.components.dsmr.sensor.create_rfxtrx_dsmr_reader",
+            connection_factory,
+        ),
+        patch(
+            "homeassistant.components.dsmr.sensor.create_rfxtrx_tcp_dsmr_reader",
+            connection_factory,
+        ),
     ):
         yield (connection_factory, transport, protocol)
 
 
 @pytest.fixture
-async def dsmr_connection_send_validate_fixture(hass):
+def dsmr_connection_send_validate_fixture() -> (
+    Generator[tuple[MagicMock, MagicMock, MagicMock]]
+):
     """Fixture that mocks serial connection."""
 
     transport = MagicMock(spec=asyncio.Transport)
@@ -129,18 +142,23 @@ async def dsmr_connection_send_validate_fixture(hass):
 
     protocol.wait_closed = wait_closed
 
-    with patch(
-        "homeassistant.components.dsmr.config_flow.create_dsmr_reader",
-        connection_factory,
-    ), patch(
-        "homeassistant.components.dsmr.config_flow.create_tcp_dsmr_reader",
-        connection_factory,
+    with (
+        patch(
+            "homeassistant.components.dsmr.config_flow.create_dsmr_reader",
+            connection_factory,
+        ),
+        patch(
+            "homeassistant.components.dsmr.config_flow.create_tcp_dsmr_reader",
+            connection_factory,
+        ),
     ):
         yield (connection_factory, transport, protocol)
 
 
 @pytest.fixture
-async def rfxtrx_dsmr_connection_send_validate_fixture(hass):
+def rfxtrx_dsmr_connection_send_validate_fixture() -> (
+    Generator[tuple[MagicMock, MagicMock, MagicMock]]
+):
     """Fixture that mocks serial connection."""
 
     transport = MagicMock(spec=asyncio.Transport)
@@ -175,11 +193,14 @@ async def rfxtrx_dsmr_connection_send_validate_fixture(hass):
 
     protocol.wait_closed = wait_closed
 
-    with patch(
-        "homeassistant.components.dsmr.config_flow.create_rfxtrx_dsmr_reader",
-        connection_factory,
-    ), patch(
-        "homeassistant.components.dsmr.config_flow.create_rfxtrx_tcp_dsmr_reader",
-        connection_factory,
+    with (
+        patch(
+            "homeassistant.components.dsmr.config_flow.create_rfxtrx_dsmr_reader",
+            connection_factory,
+        ),
+        patch(
+            "homeassistant.components.dsmr.config_flow.create_rfxtrx_tcp_dsmr_reader",
+            connection_factory,
+        ),
     ):
         yield (connection_factory, transport, protocol)

@@ -1,4 +1,5 @@
 """Support for the Hive climate devices."""
+
 from datetime import timedelta
 import logging
 from typing import Any
@@ -58,11 +59,8 @@ async def async_setup_entry(
 
     hive = hass.data[DOMAIN][entry.entry_id]
     devices = hive.session.deviceList.get("climate")
-    entities = []
     if devices:
-        for dev in devices:
-            entities.append(HiveClimateEntity(hive, dev))
-    async_add_entities(entities, True)
+        async_add_entities((HiveClimateEntity(hive, dev) for dev in devices), True)
 
     platform = entity_platform.async_get_current_platform()
 
@@ -144,10 +142,10 @@ class HiveClimateEntity(HiveEntity, ClimateEntity):
         self.device = await self.hive.heating.getClimate(self.device)
         self._attr_available = self.device["deviceData"].get("online")
         if self._attr_available:
-            self._attr_hvac_mode = HIVE_TO_HASS_STATE[self.device["status"]["mode"]]
-            self._attr_hvac_action = HIVE_TO_HASS_HVAC_ACTION[
+            self._attr_hvac_mode = HIVE_TO_HASS_STATE.get(self.device["status"]["mode"])
+            self._attr_hvac_action = HIVE_TO_HASS_HVAC_ACTION.get(
                 self.device["status"]["action"]
-            ]
+            )
             self._attr_current_temperature = self.device["status"][
                 "current_temperature"
             ]
@@ -156,5 +154,6 @@ class HiveClimateEntity(HiveEntity, ClimateEntity):
             self._attr_max_temp = self.device["max_temp"]
             if self.device["status"]["boost"] == "ON":
                 self._attr_preset_mode = PRESET_BOOST
+                self._attr_hvac_mode = HVACMode.HEAT
             else:
                 self._attr_preset_mode = PRESET_NONE
